@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{
+margin:0;
+padding:0;
+background:#020617;
+color:#e2e8f0;
+font-family:Arial,sans-serif;
+overflow:hidden;
+}
+
+.glass{
+background:rgba(15,23,42,.82);
+backdrop-filter:blur(14px);
+border:1px solid rgba(16,185,129,.25);
+}
+
+.glow{
+color:#10b981;
+text-shadow:0 0 12px #10b981;
+}
+
+.bot{
+background:rgba(16,185,129,.12);
+border:1px solid #10b981;
+border-radius:18px 18px 18px 4px;
+}
+
+.user{
+background:#1e293b;
+border-right:4px solid #10b981;
+border-radius:18px 18px 4px 18px;
+}
+
+.preview{
+max-height:90px;
+border:2px solid #10b981;
+border-radius:10px;
+display:none;
+margin-bottom:10px;
+}
+
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{
+background:#334155;
+border-radius:10px;
+}
+</style>
+</head>
+
+<body class="h-screen flex items-center justify-center p-3">
+
+<div class="w-full max-w-5xl h-[95vh] glass rounded-3xl p-5 shadow-2xl flex flex-col">
+
+<div class="text-center border-b border-white/10 pb-4 mb-4">
+<h1 class="text-5xl font-black text-white tracking-widest uppercase">
+NEXORA AI
+</h1>
+
+<p class="text-xs font-mono glow tracking-[0.45em] uppercase mt-2">
+Powered by CWA
+</p>
+</div>
+
+<div id="chat" class="flex-grow overflow-y-auto space-y-5 pr-2">
+
+<div class="flex justify-start">
+<div class="bot p-4 text-sm max-w-[82%]">
+Hello. I am Nexora AI. How can I help you today?
+</div>
+</div>
+
+<div id="loading" class="hidden text-emerald-400 text-xs animate-pulse ml-2">
+NEXORA THINKING...
+</div>
+
+</div>
+
+<img id="preview" class="preview">
+
+<form id="form"
+class="mt-4 flex gap-2 bg-slate-950 p-2 rounded-2xl border border-white/10">
+
+<label class="cursor-pointer p-3 text-emerald-400 hover:text-white transition">
+📷
+<input type="file" id="img" class="hidden" accept="image/*">
+</label>
+
+<input
+id="input"
+type="text"
+autocomplete="off"
+placeholder="Ask Nexora anything..."
+class="flex-grow bg-transparent outline-none px-4 text-white"
+/>
+
+<button
+type="submit"
+class="bg-emerald-600 px-7 py-3 rounded-xl font-bold hover:bg-emerald-500 transition">
+SEND
+</button>
+
+</form>
+</div>
+
+<script>
+const form=document.getElementById("form");
+const chat=document.getElementById("chat");
+const loading=document.getElementById("loading");
+const input=document.getElementById("input");
+const img=document.getElementById("img");
+const preview=document.getElementById("preview");
+
+let selectedImage=null;
+
+function scrollBottom(){
+chat.scrollTop=chat.scrollHeight;
+}
+
+function addMessage(text,type){
+const row=document.createElement("div");
+row.className=type==="user"?"flex justify-end":"flex justify-start";
+
+const bubble=document.createElement("div");
+bubble.className=(type==="user"?"user":"bot")+" p-4 text-sm max-w-[82%] whitespace-pre-wrap";
+
+bubble.textContent=text;
+row.appendChild(bubble);
+chat.insertBefore(row,loading);
+scrollBottom();
+}
+
+img.addEventListener("change",(e)=>{
+const file=e.target.files[0];
+if(!file)return;
+
+const reader=new FileReader();
+
+reader.onloadend=()=>{
+selectedImage=reader.result;
+preview.src=selectedImage;
+preview.style.display="block";
+};
+
+reader.readAsDataURL(file);
+});
+
+form.addEventListener("submit",async(e)=>{
+e.preventDefault();
+
+const text=input.value.trim();
+if(!text && !selectedImage)return;
+
+addMessage(text || "Image Scan Request","user");
+
+const payload={
+prompt:text,
+image:selectedImage
+};
+
+input.value="";
+selectedImage=null;
+img.value="";
+preview.style.display="none";
+
+loading.classList.remove("hidden");
+
+try{
+const res=await fetch("http://localhost:3000/api/nexora",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
+});
+
+const data=await res.json();
+
+addMessage(data.response || "No response.","bot");
+
+}catch(err){
+addMessage("Connection failed. Start server with node server.js","bot");
+}
+
+loading.classList.add("hidden");
+input.focus();
+});
+
+scrollBottom();
+input.focus();
+</script>
+
+</body>
+</html>
