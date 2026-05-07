@@ -34,7 +34,7 @@ function currentDate() {
 
 function smartMath(exp) {
     try {
-        if (!/^[0-9+\\-*/(). %]+$/.test(exp)) return null;
+        if (!/^[0-9+\-*/(). %]+$/.test(exp)) return null;
         return eval(exp);
     } catch {
         return null;
