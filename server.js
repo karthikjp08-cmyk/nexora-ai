@@ -9,9 +9,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
+app.use(express.static(__dirname));
 
 if (!process.env.GROQ_API_KEY) {
-    console.log("❌ Missing GROQ_API_KEY in .env");
+    console.log("❌ Missing GROQ_API_KEY");
     process.exit(1);
 }
 
@@ -33,7 +34,7 @@ function currentDate() {
 
 function smartMath(exp) {
     try {
-        if (!/^[0-9+\-*/(). %]+$/.test(exp)) return null;
+        if (!/^[0-9+\\-*/(). %]+$/.test(exp)) return null;
         return eval(exp);
     } catch {
         return null;
@@ -41,7 +42,7 @@ function smartMath(exp) {
 }
 
 app.get("/", (req, res) => {
-    res.send("🚀 Nexora AI Running");
+    res.sendFile(__dirname + "/index.html");
 });
 
 async function askNexora(prompt) {
@@ -74,18 +75,16 @@ async function askNexora(prompt) {
         return "Answer: " + calc;
     }
 
-    const history = memory.join("\n");
+    const history = memory.join("\\n");
 
     const finalPrompt = `
 You are Nexora AI.
 
 Rules:
-- Give excellent modern answers
-- Sound natural and intelligent
+- Give smart modern answers
+- Sound natural
 - Plain text only
-- Use bullet points with -
-- Never mention training cutoff
-- Keep answers neat and readable
+- Keep answers clean and readable
 - Use memory for follow-up questions
 
 Recent Chat:
