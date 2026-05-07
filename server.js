@@ -76,18 +76,6 @@ async function askNexora(prompt, image) {
         return "Current date and time: " + currentDate();
     }
 
-    if (
-        text.includes("richest person") ||
-        text.includes("richest man") ||
-        text.includes("richest human")
-    ) {
-        return "Elon Musk is widely ranked among the richest people in the world currently. Rankings can change often based on markets.";
-    }
-
-    if (text.includes("richest country")) {
-        return "- Luxembourg\n- Ireland\n- Singapore\n- Qatar\n- Norway";
-    }
-
     const calc = smartMath(text);
     if (calc !== null) {
         return "Answer: " + calc;
@@ -154,10 +142,11 @@ ${prompt || "Analyze this image"}
             });
 
             return result.text;
-
-        } catch (err) {
-            lastError = err;
-        }
+            
+}catch(err){
+    console.log("MODEL ERROR:", err);
+    lastError = err;
+}
     }
 
     throw lastError;
