@@ -3,7 +3,7 @@ const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
 
-const { GoogleGenAI } = require("@google/genai");
+const Groq = require("groq-sdk");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,13 +19,11 @@ if (!process.env.GEMINI_API_KEY) {
     process.exit(1);
 }
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
+const ai = new Groq({
+    apiKey: process.env.GROQ_API_KEY
 });
 
-const MODELS = [
-    "gemini-2.0-flash-lite"
-];
+const MODELS = ["llama3-8b-8192"];
 
 let memory = [];
 
@@ -135,12 +133,17 @@ ${prompt || "Analyze this image"}
                 contents = finalPrompt;
             }
 
-            const result = await ai.models.generateContent({
-                model: model,
-                contents: contents
-            });
+            const result = await ai.chat.completions.create({
+    messages: [
+        {
+            role: "user",
+            content: finalPrompt
+        }
+    ],
+    model: "llama3-8b-8192"
+});
 
-            return result.text;
+return result.choices[0].message.content;
             
 }catch(err){
     console.log("MODEL ERROR:", err);
