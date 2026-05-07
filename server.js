@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 require("dotenv").config();
 
 const Groq = require("groq-sdk");
@@ -11,9 +10,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
-/* Serve website files */
-app.use(express.static(__dirname));
-
 if (!process.env.GROQ_API_KEY) {
     console.log("❌ Missing GROQ_API_KEY in .env");
     process.exit(1);
@@ -22,8 +18,6 @@ if (!process.env.GROQ_API_KEY) {
 const ai = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
-
-const MODELS = ["llama3-8b-8192"];
 
 let memory = [];
 
@@ -46,15 +40,15 @@ function smartMath(exp) {
     }
 }
 
-/* ROOT WEBSITE PAGE */
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+    res.send("🚀 Nexora AI Running");
 });
 
-async function askNexora(prompt, image) {
+async function askNexora(prompt) {
 
     const text = (prompt || "").toLowerCase().trim();
 
+    // Founder Logic
     if (
         text.includes("who is your founder") ||
         text.includes("who founded you") ||
@@ -65,27 +59,24 @@ async function askNexora(prompt, image) {
         return "Karthik Jayaprakash is the founder of CWA.";
     }
 
+    // Date and Time Logic
     if (
         text.includes("date") ||
         text.includes("time") ||
-        text === "today"
+        text.includes("today")
     ) {
         return "Current date and time: " + currentDate();
     }
 
+    // Math Logic
     const calc = smartMath(text);
     if (calc !== null) {
         return "Answer: " + calc;
     }
 
-    let lastError = null;
+    const history = memory.join("\n");
 
-    for (const model of MODELS) {
-        try {
-
-            const history = memory.join("\n");
-
-            const finalPrompt = `
+    const finalPrompt = `
 You are Nexora AI.
 
 Rules:
@@ -93,76 +84,38 @@ Rules:
 - Sound natural and intelligent
 - Plain text only
 - Use bullet points with -
-- NEVER say "as of my last knowledge update"
-- NEVER mention training cutoff
-- Give present-day answers confidently
-- If facts can change, say rankings may change
+- Never mention training cutoff
 - Keep answers neat and readable
 - Use memory for follow-up questions
-- Understand short prompts like:
-  just names
-  short answer
-  explain more
-  only list
-- If image is sent, analyze it clearly
-- Solve calculations correctly
-- Do not mention date unless asked
 
 Recent Chat:
 ${history}
 
 User Question:
-${prompt || "Analyze this image"}
+${prompt}
 `;
 
-            let contents;
-
-            if (image) {
-                const base64 = image.split(",")[1];
-
-                contents = [
-                    { text: finalPrompt },
-                    {
-                        inlineData: {
-                            mimeType: "image/png",
-                            data: base64
-                        }
-                    }
-                ];
-            } else {
-                contents = finalPrompt;
+    const result = await ai.chat.completions.create({
+        messages: [
+            {
+                role: "user",
+                content: finalPrompt
             }
+        ],
+        model: "llama3-8b-8192"
+    });
 
-            const result = await ai.chat.completions.create({
-    messages: [
-        {
-            role: "user",
-            content: finalPrompt
-        }
-    ],
-    model: "llama3-8b-8192"
-});
-
-return result.choices[0].message.content;
-            
-}catch(err){
-    console.log("MODEL ERROR:", err);
-    lastError = err;
-}
-    }
-
-    throw lastError;
+    return result.choices[0].message.content;
 }
 
 app.post("/api/nexora", async (req, res) => {
     try {
 
         const prompt = req.body.prompt || "";
-        const image = req.body.image || null;
 
-        const reply = await askNexora(prompt, image);
+        const reply = await askNexora(prompt);
 
-        memory.push("User: " + (prompt || "Image Request"));
+        memory.push("User: " + prompt);
         memory.push("Nexora: " + reply);
 
         if (memory.length > 24) {
@@ -175,14 +128,14 @@ app.post("/api/nexora", async (req, res) => {
 
     } catch (err) {
 
-        console.log(err);
+        console.log("REAL ERROR:", err);
 
         res.status(500).json({
-            response: "All AI models unavailable or quota reached."
+            response: "Groq AI error."
         });
     }
 });
 
 app.listen(PORT, () => {
-    console.log("🚀 Nexora AI Online");
+    console.log(`🚀 Nexora AI Online on port ${PORT}`);
 });
