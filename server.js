@@ -6,16 +6,17 @@ require("dotenv").config();
 const { GoogleGenAI } = require("@google/genai");
 
 const app = express();  
-// Dynamic port allocation for Render environment compatibility  
+// Dynamic port for Render deployment compatibility  
 const PORT = process.env.PORT || 3000;
 
+// Middleware configuration  
 app.use(cors());  
 app.use(express.json({ limit: "50mb" }));
 
-// Serves your static HTML frontend files automatically  
+// Serves static assets from the current directory  
 app.use(express.static(\_\_dirname));
 
-// Fixed check to read directly from Render environment variables  
+// Cloud environment API key validation  
 if (!process.env.GEMINI\_API\_KEY) {  
 console.log("❌ Missing GEMINI\_API\_KEY environment variable");  
 process.exit(1);  
@@ -52,13 +53,12 @@ return null;
 }  
 }
 
-// Serves the index.html file at the root URL  
+// Serves your HTML file automatically at the root URL  
 app.get("/", (req, res) => {  
 res.sendFile(path.join(\_\_dirname, "index.html"));  
 });
 
-async function askNexora(prompt,image){
-
+async function askNexora(prompt,image){  
 const text = (prompt || "").toLowerCase().trim();
 
 /\* Founder Logic \*/  
@@ -91,9 +91,7 @@ return "Elon Musk is widely ranked among the richest people in the world current
 }
 
 /\* Richest Country Logic \*/  
-if(  
-text.includes("richest country")  
-){  
+if(text.includes("richest country")){  
 return "- Luxembourg\\n- Ireland\\n- Singapore\\n- Qatar";  
 }
 
@@ -106,8 +104,7 @@ return "Answer: " + calc;
 let lastError = null;
 
 for(const model of MODELS){  
-try{
-
+try{  
 const history = memory.join("\\n");
 
 const finalPrompt = \`  
@@ -145,8 +142,7 @@ ${prompt || "Analyze this image"}
 let contents;
 
 if(image){  
-const base64 = image.split(",")\[1\];
-
+const base64 = image.split(",")\[1\];  
 contents = \[  
 { text: finalPrompt },  
 {  
@@ -176,8 +172,7 @@ throw lastError;
 }
 
 app.post("/api/nexora",async(req,res)=>{  
-try{
-
+try{  
 const prompt = req.body.prompt || "";  
 const image = req.body.image || null;
 
@@ -190,14 +185,10 @@ if(memory.length > 24){
 memory = memory.slice(-24);  
 }
 
-res.json({  
-response: reply  
-});
+res.json({ response: reply });
 
-}catch(err){
-
-console.log(err);
-
+}catch(err){  
+console.log(err);  
 res.status(500).json({  
 response:"All AI models unavailable or quota reached."  
 });  
