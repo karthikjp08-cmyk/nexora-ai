@@ -1,14 +1,19 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
-const PORT = 3000;
+// Dynamic port allocation for Render environment compatibility
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
+
+// Serves your static HTML frontend automatically
+app.use(express.static(__dirname));
 
 if (!process.env.GEMINI_API_KEY) {
     console.log("❌ Missing GEMINI_API_KEY in .env");
@@ -46,8 +51,9 @@ function smartMath(exp){
     }
 }
 
-app.get("/",(req,res)=>{
-    res.send("🚀 Nexora AI Running");
+// Serves the index.html file at the root URL
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
 });
 
 async function askNexora(prompt,image){
@@ -197,5 +203,5 @@ app.post("/api/nexora",async(req,res)=>{
 });
 
 app.listen(PORT,()=>{
-    console.log("🚀 Nexora AI Online at http://localhost:3000");
+    console.log(`🚀 Nexora AI Online on port ${PORT}`);
 });
